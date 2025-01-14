@@ -1,26 +1,29 @@
 import OpenAI from "openai";
 import {SearchConfigState} from "~/stores/searchConfigStore";
 
-export async function findInfluencer(influencerName: string | null, mode: SearchConfigState['mode'], apiKey: string) {
+export async function findInfluencer(
+  influencerName: string | null,
+  mode: SearchConfigState["mode"],
+  apiKey: string
+) {
   const openai = new OpenAI({
     apiKey: apiKey,
   });
 
   const prompt = `
     You are a database of influencers. Your task is to ${
-      mode === "specific"
-        ? `find the slug (unique identifier) of the influencer named "${influencerName}".`
-        : `find a random influencer in the health-related domain.`
-    }
-  
+    mode === "specific"
+      ? `find the slug (unique identifier) of the influencer named "${influencerName}".`
+      : `find a random influencer in the health-related domain.`
+  }
+
     Respond ONLY with the slug as plain text, without any additional formatting. 
     If ${
-      mode === "specific"
-        ? `the influencer is not found,`
-        : `no influencer can be discovered,`
-    } respond with "Influencer not found".
+    mode === "specific"
+      ? `the influencer is not found,`
+      : `no influencer can be discovered,`
+  } return: {"error": "Unable to process request"}, never "null" tho.
   `;
-
 
   try {
     const response = await openai.chat.completions.create({
@@ -28,16 +31,33 @@ export async function findInfluencer(influencerName: string | null, mode: Search
       messages: [{ role: "user", content: prompt }],
     });
 
-    const slug = response.choices[0]?.message?.content?.trim();
+    const content = response.choices[0]?.message?.content?.trim();
 
-    if (!slug || slug.toLowerCase() === "influencer not found") {
-      throw new Error("Influencer not found");
+    if (!content) {
+      throw new Error("No response content received from OpenAI.");
     }
 
-    return slug;
+    if (content.startsWith("{") && content.endsWith("}")) {
+      try {
+        const jsonResponse = JSON.parse(content);
+        if (jsonResponse.error) {
+          console.error("OpenAI returned an error:", jsonResponse.error);
+          throw new Error(jsonResponse.error);
+        }
+      } catch (jsonError) {
+        console.error("Error parsing JSON response:", content);
+        throw new Error("OpenAI response is not valid JSON.");
+      }
+    }
+
+    if (!content || content.toLowerCase() === "influencer not found") {
+      throw new Error("Influencer not found.");
+    }
+
+    return content;
   } catch (error) {
     console.error("Error finding influencer slug:", error);
-    return null;
+    throw error;
   }
 }
 
@@ -45,6 +65,7 @@ export async function analyzeInfluencer(params: Partial<SearchConfigState>, apiK
   const openai = new OpenAI({
     apiKey: apiKey,
   });
+
   const {
     influencerName,
     timeRange,
@@ -54,6 +75,8 @@ export async function analyzeInfluencer(params: Partial<SearchConfigState>, apiK
     productsPerInfluencer,
     includeRevenueAnalysis
   } = params;
+
+  console.log("timeRange:", timeRange);
 
   const prompt = `
   You are an AI system specialized in analyzing influencer content. Your task is to analyze the influencer "${influencerName}" based on recent data, including tweets, podcast transcripts, and online profiles. Your analysis must follow these requirements:

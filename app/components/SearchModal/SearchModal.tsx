@@ -1,4 +1,4 @@
-import { useState } from "react";
+import {useEffect, useRef, useState} from "react";
 import { useSearchConfigStore } from "~/stores/searchConfigStore";
 import { Cog } from "../../../public/icons/Cog";
 import Modal from "~/components/Modal/Modal";
@@ -19,9 +19,24 @@ type TimeRange = "week" | "month" | "year" | "all";
 
 function SearchModal({ open, closeModal }: ModalSearchProps) {
   const fetcher = useFetcher();
+  const fetcherRef = useRef(fetcher)
+
   const { setConfig, ...globalConfig } = useSearchConfigStore();
 
-  const [formState, setFormState] = useState(globalConfig);
+  useEffect(() => {
+    fetcherRef.current.load("/api/configCookies");
+    setFormState(fetcher.data && fetcher.data?.config || globalConfig);
+  }, []);
+
+  useEffect(() => {
+    if (fetcher.data?.config) {
+      setFormState(fetcher.data.config);
+      setConfig(fetcher.data.config);
+    }
+  }, [fetcher.data, setConfig]);
+
+
+  const [formState, setFormState] = useState(fetcher.data?.config || globalConfig);
 
   const [addJournalist, setAddJournalist] = useState(false);
   const [journalName, setJournalName] = useState("");
@@ -61,7 +76,6 @@ function SearchModal({ open, closeModal }: ModalSearchProps) {
         <h2 className="text-xl font-bold">Search configuration</h2>
       </div>
 
-      {/* Grid para modos */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         {/* Specific Influencer */}
         <div
@@ -133,7 +147,7 @@ function SearchModal({ open, closeModal }: ModalSearchProps) {
           </div>
         </div>
 
-        {/* Columna 2 */}
+        {/* Column 2 */}
         <div>
           {/* Products per influencer */}
           <div className="mt-5">

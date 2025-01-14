@@ -1,4 +1,3 @@
-
 import { createCookie } from "@remix-run/node";
 
 export const configCookie = createCookie("config", {

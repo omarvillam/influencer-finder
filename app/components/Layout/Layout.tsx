@@ -16,6 +16,7 @@ function Layout({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
+    console.log(fetcher.data)
     if (fetcher.data && !fetcher.data.apiKey && !open) {
       openModal();
     }

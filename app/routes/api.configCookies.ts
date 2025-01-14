@@ -1,5 +1,6 @@
-import {ActionFunction, json} from "@remix-run/node";
+import {ActionFunction, data, json, LoaderFunction} from "@remix-run/node";
 import {configCookie} from "~/cookies/configCookie";
+import {sessionCookie} from "~/cookies/sessionCookie";
 
 export const action: ActionFunction = async ({ request }) => {
   const formData = await request.formData();
@@ -7,7 +8,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   const parsedConfig = JSON.parse(config.config as string);
 
-  return Response.json(
+  return data(
     { success: true },
     {
       headers: {
@@ -15,4 +16,15 @@ export const action: ActionFunction = async ({ request }) => {
       },
     }
   );
+};
+
+export const loader: LoaderFunction = async ({ request }) => {
+  try {
+    const config = await configCookie.parse(request.headers.get("Cookie"));
+
+    return {config: config || null}
+  } catch (error) {
+    console.error("Error parsing cookie:", error);
+    return data({ error: "Failed to parse cookie" }, { status: 500 });
+  }
 };

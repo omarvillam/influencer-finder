@@ -1,5 +1,5 @@
-import {LoaderFunction, redirect} from "@remix-run/node";
-import {useLoaderData, useNavigate} from "@remix-run/react";
+import {data, LoaderFunction, redirect} from "@remix-run/node";
+import {useLoaderData} from "@remix-run/react";
 import Layout from "~/components/Layout/Layout";
 import {Money} from "../../public/icons/Money";
 import {UserGroup} from "../../public/icons/UserGroup";
@@ -15,8 +15,7 @@ import {unslugify} from "~/lib/utils";
 import {sessionCookie} from "~/cookies/sessionCookie";
 import {configCookie} from "~/cookies/configCookie";
 import {Claim} from "~/types/Influencer";
-
-import { redirect } from "@remix-run/node";
+import GenericError from "~/components/GenericError/GenericError";
 
 export const loader: LoaderFunction = async ({ request, params }) => {
   const {influencer} = params;
@@ -34,6 +33,8 @@ export const loader: LoaderFunction = async ({ request, params }) => {
   try {
     const config = await configCookie.parse(request.headers.get("Cookie"));
 
+    console.log(config);
+
     const influencerData = await analyzeInfluencer(
       {
         ...config,
@@ -46,45 +47,24 @@ export const loader: LoaderFunction = async ({ request, params }) => {
     );
 
     if (!influencerData) {
-      throw new Response("Influencer not found", {status: 404});
+      return data({error: "Influencer not found"}, {status: 404});
     }
 
-    return new Response(
-      JSON.stringify({
-        influencer: influencerData,
-      }),
-      {status: 200, headers: {"Content-Type": "application/json"}}
-    );
+    return {influencer: influencerData}
   } catch (error) {
-    console.error("Error analyzing influencer:", error);
-    throw new Response
+    return {error}
   }
 }
 
 function InfluencerPage() {
-  const { influencer } = useLoaderData<typeof loader>();
-  const navigate = useNavigate();
+  const { influencer, error } = useLoaderData<typeof loader>();
 
   return (
     <Layout>
-      {influencer?.error ? (
-        <div className={"flex w-full h-full flex-col gap-2 items-center justify-center"}>
-          {influencer?.error}
-          <div className={"flex flex-row gap-2 mt-2"}>
-            <button
-              onClick={() => navigate("/")}
-              className="border border-solid border-gray text-white flex items-center px-4 py-2 rounded-full ml-auto hover:bg-gray transition-3 mt-6"
-            >
-              Home
-            </button>
-            <button
-              onClick={() => location.reload()}
-              className="bg-white flex items-center text-contrast px-4 py-2 rounded-full ml-auto hover:bg-gray transition-3 mt-6"
-            >
-              Refresh
-            </button>
-          </div>
-        </div>
+      {error ? (
+        <GenericError>
+          {error.message}
+        </GenericError>
       ) : (
         <div>
           <div className={"flex flex-col gap-4"}>

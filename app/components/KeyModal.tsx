@@ -32,7 +32,7 @@ function KeyModal({ open, closeModal, apiKey }: ModalSearchProps) {
 
   return (
     <Modal open={open} onClose={closeModal}>
-      <h1 className={"mb-2"}>Introduce your <a className={"underline"} href={"https://platform.openai.com/settings/organization/api-keys"}>OpenAI&#39;s key</a></h1>
+      <h1 className={"mb-2 text-xl"}>Introduce your <a className={"underline"} href={"https://platform.openai.com/settings/organization/api-keys"}>OpenAI&#39;s key</a></h1>
       <input
         ref={inputRef}
         className="rounded-full border border-solid border-gray px-4 py-4 text-2xl w-full"
